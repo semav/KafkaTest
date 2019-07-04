@@ -41,10 +41,6 @@ public class EksEmulatorApplication {
         return props;
     }
 
-    @Bean
-    public ProducerFactory producerFactory() {
-        return new DefaultKafkaProducerFactory<>(producerConfigs());
-    }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String>
@@ -53,6 +49,7 @@ public class EksEmulatorApplication {
         ConcurrentKafkaListenerContainerFactory<String, String> factory
                 = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setReplyTemplate(kafkaTemplate());
         return factory;
     }
 
@@ -61,19 +58,28 @@ public class EksEmulatorApplication {
         return new DefaultKafkaConsumerFactory<>(consumerConfigs());
     }
 
+
+
+    @Bean
+    public ProducerFactory<String, String> producerFactory() {
+        return new DefaultKafkaProducerFactory<>(producerConfigs());
+    }
+
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
+
     public static void main(String[] args) {
 
         ApplicationContext context = SpringApplication.run(EksEmulatorApplication.class, args);
     }
 
     @KafkaListener(topics = "test")
-    @SendTo
+    @SendTo("!{source.headers['kafka_replyTopic']}")
     public String listen(String request) {
-        return request + "1wdmwfmwelf";
+
+        return request + " Ответ";
     }
 
 }

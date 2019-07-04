@@ -28,6 +28,7 @@ import org.springframework.kafka.support.SendResult;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 @SpringBootApplication
@@ -87,18 +88,26 @@ public class MyInstanceApplication implements CommandLineRunner {
         ApplicationContext context = SpringApplication.run(MyInstanceApplication.class, args);
         requestReplyKafkaTemplate = context.getBean(ReplyingKafkaTemplate.class);
 
+        Random random = new Random();
 
-        ProducerRecord<String, String> record = new ProducerRecord<>(requestTopic, "asdasd");
-        // set reply topic in header
-        record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes()));
-        // post in kafka topic
-        RequestReplyFuture<String, String, String> sendAndReceive = requestReplyKafkaTemplate.sendAndReceive(record);
+        int id = random.nextInt();
 
-        sendAndReceive.get();
+        for(int i =0 ; i < 100; i++) {
 
-        SendResult<String,String> result = sendAndReceive.getSendFuture().get();
+            Thread.sleep(1000);
 
-        result.getProducerRecord().headers().forEach(header -> System.out.println(header.key() + ":" + header.value().toString()));
+            ProducerRecord<String, String> record = new ProducerRecord<>(requestTopic, "Запрос " + id);
+            // set reply topic in header
+            record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes()));
+            // post in kafka topic
+            RequestReplyFuture<String, String, String> sendAndReceive = requestReplyKafkaTemplate.sendAndReceive(record);
+
+            System.out.println(sendAndReceive.get().value());
+        }
+
+        //SendResult<String,String> result = sendAndReceive.getSendFuture().get();
+
+        //result.getProducerRecord().headers().forEach(header -> System.out.println(header.key() + ":" + header.value().toString()));
 
     }
 
