@@ -3,6 +3,7 @@ package com.example.myinstance;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -36,8 +37,8 @@ public class MyInstanceApplication implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(MyInstanceApplication.class);
 
-    private static String replyTopic = "replyTopic";
-    private static String requestTopic = "test";
+    private static String replyTopic = "reply-new";
+    private static String requestTopic = "test-new";
 
     private static ReplyingKafkaTemplate<String, String, String> requestReplyKafkaTemplate;
 
@@ -84,7 +85,7 @@ public class MyInstanceApplication implements CommandLineRunner {
     }
 
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    public static void main(String[] args) {
         ApplicationContext context = SpringApplication.run(MyInstanceApplication.class, args);
         requestReplyKafkaTemplate = context.getBean(ReplyingKafkaTemplate.class);
 
@@ -92,27 +93,41 @@ public class MyInstanceApplication implements CommandLineRunner {
 
         int id = random.nextInt();
 
-        for(int i =0 ; i < 100; i++) {
+        for(int i =0 ; i < 10000; i++) {
 
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(10);
 
-            ProducerRecord<String, String> record = new ProducerRecord<>(requestTopic, "Запрос " + id);
-            // set reply topic in header
-            record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes()));
-            // post in kafka topic
-            RequestReplyFuture<String, String, String> sendAndReceive = requestReplyKafkaTemplate.sendAndReceive(record);
+                if (requestReplyKafkaTemplate.getAssignedReplyTopicPartitions() != null &&
+                        requestReplyKafkaTemplate.getAssignedReplyTopicPartitions().iterator().hasNext()) {
 
-            System.out.println(sendAndReceive.get().value());
+                    TopicPartition replyPartition = requestReplyKafkaTemplate.getAssignedReplyTopicPartitions().iterator().next();
+                    ProducerRecord<String, String> record = new ProducerRecord<>(requestTopic, "Запрос i = " + i + " id = " + id);
+
+                    record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes()));
+                    record.headers().add(new RecordHeader(KafkaHeaders.REPLY_PARTITION, intToBytesBigEndian(replyPartition.partition())));
+
+                    RequestReplyFuture<String, String, String> sendAndReceive = requestReplyKafkaTemplate.sendAndReceive(record);
+
+                    System.out.println(sendAndReceive.get().value());
+
+                } else {
+                    System.out.println("Illegal state: No reply partition is assigned to this instance");
+                }
+            }
+            catch (Exception ex){
+                ex.printStackTrace();
+            }
         }
+    }
 
-        //SendResult<String,String> result = sendAndReceive.getSendFuture().get();
-
-        //result.getProducerRecord().headers().forEach(header -> System.out.println(header.key() + ":" + header.value().toString()));
-
+    private static byte[] intToBytesBigEndian(final int data) {
+        return new byte[] {(byte) ((data >> 24) & 0xff), (byte) ((data >> 16) & 0xff),
+                (byte) ((data >> 8) & 0xff), (byte) ((data) & 0xff),};
     }
 
     @Override
-    public void run(String...args) throws Exception {
+    public void run(String...args) {
         logger.info("Application started with command-line arguments: {} . \n To kill this application, press Ctrl + C.", Arrays.toString(args));
     }
 

@@ -75,10 +75,15 @@ public class EksEmulatorApplication {
         ApplicationContext context = SpringApplication.run(EksEmulatorApplication.class, args);
     }
 
-    @KafkaListener(topics = "test")
+    @KafkaListener(topics = "test-new")
     @SendTo("!{source.headers['kafka_replyTopic']}")
     public String listen(String request) {
 
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return request + " Ответ";
     }
 
