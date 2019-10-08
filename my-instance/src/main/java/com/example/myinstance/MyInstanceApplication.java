@@ -79,22 +79,20 @@ public class MyInstanceApplication implements CommandLineRunner {
     }
 
     @Bean
-    public ReplyingKafkaTemplate<String, String, String> replyKafkaTemplate(ProducerFactory<String, String> pf,
-                                                                            KafkaMessageListenerContainer<String, String> lc) {
+    public ReplyingKafkaTemplate<String, String, String> replyKafkaTemplate(
+        ProducerFactory<String, String> pf,
+        KafkaMessageListenerContainer<String, String> lc) {
         return new ReplyingKafkaTemplate<>(pf, lc);
     }
-
 
     public static void main(String[] args) {
         ApplicationContext context = SpringApplication.run(MyInstanceApplication.class, args);
         requestReplyKafkaTemplate = context.getBean(ReplyingKafkaTemplate.class);
 
         Random random = new Random();
-
         int id = random.nextInt();
 
         for(int i =0 ; i < 10000; i++) {
-
             try {
                 Thread.sleep(10);
 
@@ -130,5 +128,4 @@ public class MyInstanceApplication implements CommandLineRunner {
     public void run(String...args) {
         logger.info("Application started with command-line arguments: {} . \n To kill this application, press Ctrl + C.", Arrays.toString(args));
     }
-
 }
