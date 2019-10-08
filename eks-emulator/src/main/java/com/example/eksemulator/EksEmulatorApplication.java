@@ -41,7 +41,6 @@ public class EksEmulatorApplication {
         return props;
     }
 
-
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String>
     kafkaListenerContainerFactory() {
@@ -57,8 +56,6 @@ public class EksEmulatorApplication {
     public ConsumerFactory consumerFactory() {
         return new DefaultKafkaConsumerFactory<>(consumerConfigs());
     }
-
-
 
     @Bean
     public ProducerFactory<String, String> producerFactory() {
@@ -86,5 +83,4 @@ public class EksEmulatorApplication {
         }
         return request + " Ответ";
     }
-
 }
